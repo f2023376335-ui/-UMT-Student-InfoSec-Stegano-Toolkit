@@ -10,7 +10,41 @@ import io
 import base64
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+def _show_frequency_chart(analysis, pt, ct):
+    import matplotlib.pyplot as plt
+    import string
 
+    letters = list(string.ascii_uppercase)
+    pt_pct  = [analysis["plaintext"]["frequencies"][l]["percent"] for l in letters]
+    ct_pct  = [analysis["ciphertext"]["frequencies"][l]["percent"] for l in letters]
+    eng_pct = [analysis["plaintext"]["frequencies"][l]["expected"] for l in letters]
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 4), facecolor="#0e1117")
+    for ax, pct, title, color in [
+        (axes[0], pt_pct,  "Plaintext Frequency",  "#4fc3f7"),
+        (axes[1], ct_pct,  "Ciphertext Frequency", "#ef5350")
+    ]:
+        ax.set_facecolor("#1a1a2e")
+        ax.bar(letters, pct, color=color, alpha=0.8, label="Observed")
+        ax.plot(letters, eng_pct, "w--", linewidth=1, label="English baseline")
+        ax.set_title(title, color="white")
+        ax.tick_params(colors="white", labelsize=8)
+        ax.spines[:].set_color("#444")
+        ax.legend(facecolor="#1a1a2e", labelcolor="white", fontsize=8)
+
+    plt.tight_layout()
+    st.pyplot(fig)
+    plt.close()
+
+
+def _show_ic_table(analysis):
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Plaintext IC",   f"{analysis['plaintext']['ic']:.4f}",
+                help="~0.065 = English, ~0.038 = random")
+    col2.metric("Ciphertext IC",  f"{analysis['ciphertext']['ic']:.4f}")
+    col3.metric("Plaintext χ²",   f"{analysis['plaintext']['chi2']}")
+    col4.metric("Ciphertext χ²",  f"{analysis['ciphertext']['chi2']}")
+    st.caption("IC close to 0.065 → monoalphabetic cipher · IC close to 0.038 → polyalphabetic/transposition")
 from ciphers import (
     vigenere_encrypt, vigenere_decrypt,
     playfair_encrypt, playfair_decrypt,
@@ -364,39 +398,3 @@ elif section == "📊 Cryptanalysis":
                 st.success("✅ Low chi-squared — no steganography evidence found")
 
 
-# ── SHARED HELPER FUNCTIONS ───────────────────────────────────────────────────
-def _show_frequency_chart(analysis, pt, ct):
-    import matplotlib.pyplot as plt
-    import string
-
-    letters = list(string.ascii_uppercase)
-    pt_pct  = [analysis["plaintext"]["frequencies"][l]["percent"] for l in letters]
-    ct_pct  = [analysis["ciphertext"]["frequencies"][l]["percent"] for l in letters]
-    eng_pct = [analysis["plaintext"]["frequencies"][l]["expected"] for l in letters]
-
-    fig, axes = plt.subplots(1, 2, figsize=(14, 4), facecolor="#0e1117")
-    for ax, pct, title, color in [
-        (axes[0], pt_pct,  "Plaintext Frequency",  "#4fc3f7"),
-        (axes[1], ct_pct,  "Ciphertext Frequency", "#ef5350")
-    ]:
-        ax.set_facecolor("#1a1a2e")
-        ax.bar(letters, pct, color=color, alpha=0.8, label="Observed")
-        ax.plot(letters, eng_pct, "w--", linewidth=1, label="English baseline")
-        ax.set_title(title, color="white")
-        ax.tick_params(colors="white", labelsize=8)
-        ax.spines[:].set_color("#444")
-        ax.legend(facecolor="#1a1a2e", labelcolor="white", fontsize=8)
-
-    plt.tight_layout()
-    st.pyplot(fig)
-    plt.close()
-
-
-def _show_ic_table(analysis):
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Plaintext IC",   f"{analysis['plaintext']['ic']:.4f}",
-                help="~0.065 = English, ~0.038 = random")
-    col2.metric("Ciphertext IC",  f"{analysis['ciphertext']['ic']:.4f}")
-    col3.metric("Plaintext χ²",   f"{analysis['plaintext']['chi2']}")
-    col4.metric("Ciphertext χ²",  f"{analysis['ciphertext']['chi2']}")
-    st.caption("IC close to 0.065 → monoalphabetic cipher · IC close to 0.038 → polyalphabetic/transposition")
